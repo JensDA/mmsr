@@ -10,11 +10,15 @@ from data.util import bgr2ycbcr
 from data import create_dataset, create_dataloader
 from models import create_model
 
-usePIL = False
+use_pil = False
 try:
     from PIL import Image
     from torchvision import transforms
-    usePil = True
+    use_pil = True
+except ImportError as error:
+    print(error)
+    print("PIL and/or torchvision not available,"
+          "ICC and EXIF profiles will not be written to output files.")
 
 #### options
 parser = argparse.ArgumentParser()
@@ -70,17 +74,12 @@ for test_loader in test_loaders:
         else:
             save_img_path = osp.join(dataset_dir, img_name + '.png')
 
-        if usePIL:
+        if use_pil:
             # save with original ICC and EXIF profiles attached
             original_img_info = Image.open(img_path).info
             image = transforms.ToPILImage()(visuals['rlt'])
-            image.save(
-                save_img_path,
-                'PNG',
-                icc_profile=original_img_info.get('icc_profile'),
-                optimize=True,
-                exif=original_img_info.get('exif')
-                )
+            image.save(save_img_path, 'PNG', icc_profile=original_img_info.get('icc_profile'),
+                       optimize=True, exif=original_img_info.get('exif'))
         else:
             util.save_img(sr_img, save_img_path)
 
