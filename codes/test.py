@@ -10,6 +10,12 @@ from data.util import bgr2ycbcr
 from data import create_dataset, create_dataloader
 from models import create_model
 
+usePIL = False
+try:
+    from PIL import Image
+    from torchvision import transforms
+    usePil = True
+
 #### options
 parser = argparse.ArgumentParser()
 parser.add_argument('-opt', type=str, required=True, help='Path to options YMAL file.')
@@ -63,7 +69,20 @@ for test_loader in test_loaders:
             save_img_path = osp.join(dataset_dir, img_name + suffix + '.png')
         else:
             save_img_path = osp.join(dataset_dir, img_name + '.png')
-        util.save_img(sr_img, save_img_path)
+
+        if usePIL:
+            # save with original ICC and EXIF profiles attached
+            original_img_info = Image.open(img_path).info
+            image = transforms.ToPILImage()(visuals['rlt'])
+            image.save(
+                save_img_path,
+                'PNG',
+                icc_profile=original_img_info.get('icc_profile'),
+                optimize=True,
+                exif=original_img_info.get('exif')
+                )
+        else:
+            util.save_img(sr_img, save_img_path)
 
         # calculate PSNR and SSIM
         if need_GT:
